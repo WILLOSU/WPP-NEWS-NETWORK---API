@@ -1,0 +1,39 @@
+1º BAIXAR O NODE JS - VERSION LTS - LINK: https://nodejs.org/en
+
+2º ABRIR O WPP NEWS NETWORK - API PELO VS CODE
+
+3º VERIFICADO NO VS CODE SE A VERSION ESTÁ OK - node --version (motor V8 do google sendo executado na nossa máquina)
+
+4º npm init -y :(iniciando um projeto node) - criando um arquivo jason
+
+5º npm start (rodando)
+
+6º usar o comanado : npm i express : para instalar o framework express.
+
+7º rodando o projeto : npm start
+
+8º biblioteca : nodemon -npm i nodemon :(para observar se o código é mudado)
+
+9º para rodar usar : npm run dev
+
+10º npm i --> instal todos o pacotes do projeto.
+
+11º npm i mongose --> // O  mongose está para o mongo assim como criar uma api do zero com node está para express.
+
+
+12º npm i bcrypt
+
+13º npm i jsonwebtoken
+
+14º npm i swagger-ui-express
+-----------------------------------
+PARA VERSIONAR O projeto
+
+------
+CTRL + C = para o terminal
+
+
+
+
+
+

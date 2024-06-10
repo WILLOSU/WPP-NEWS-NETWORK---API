@@ -1,0 +1,72 @@
+CRIAÇÃO DE ROTAS;
+
+METÓDO HTTP. (CRUD, READ, UPDATE, DELETE)
+    GET    - Pega        uma informação
+    POST   - Cria        uma informação
+    PUT    - Altera toda   a informação
+    PATH   - Altera parte da informação
+    DELETE - Apaga       uma informação
+
+NAME - UM IDENTIFICADOR DA ROTA
+FUNCÃO - CALL BACK - RESPONSÁEL POR EXECUTAR ALGUM COMANDO
+PORQUE É CALL BACK ?? --> CHAMADA POR TRÁZ.
+
+-----------------------------------------------------------
+ARQUITETURA DO PROJETO.
+
+Arquitetura Monolítica com JWT, MongoDB Atlas, e Express
+
+Cliente (SPA):
+- Pages: Páginas da aplicação (login, principal, usuário, etc.).
+- Routes: Gerenciam a navegação.
+- Service: Lida com chamadas de API, incluindo tokens JWT.
+
+Servidor (API - Express):
+- Models: Define a estrutura do MongoDB (usuários, comentários).
+- Controller: Lógica de negócios, responde a solicitações.
+- Routes: Mapeia URLs para funções no controller.
+- Services: Lógica de negócios complexa, interação com o banco.
+- Middleware: Validação de tokens JWT antes do acesso.
+
+Autenticação com JWT:
+- Geração do Token: Após login, servidor gera token JWT.
+- Envio para o Cliente: Token enviado e armazenado com segurança.
+- Inclusão nas Solicitações: Token no cabeçalho para autenticação.
+- Validação no Servidor: Verificação da assinatura e permissões.
+
+Banco de Dados (MongoDB Atlas):
+- Database: Representa o banco no MongoDB Atlas.
+- Collections: Armazenam documentos (usuários, comentários).
+- Documents: Registros individuais dentro de coleções.
+
+Observações Finais:
+- Use 'jsonwebtoken' para manipulação de tokens JWT.
+- Armazene informações sensíveis no lado do servidor.
+- Configure MongoDB Atlas e conexões com segurança.
+
+----------------------------------------------------------------------------------------
+
+Interpolação - USER - CONTROLER - ROUTE - SERVICE .
+
+a rota se comunica com o controler, o controler faz alguma lógica e manda informações
+para o service, o service vai se conectar com o banco e vai mostrar isso pra gente.
+
+----------------------------------------------------------------------------------------
+
+Testando os posts gets etc, vamos usar o Thunde Client, é uma extensão;
+
+----------------------------------------------------------------------------------------
+
+imagens imgur.com imagens gratuitas e podemos postar
+
+----------------------------------------------------------------------------------------
+
+MIDDLEWARE.
+
+Testar o se o usuário é identifco, ao banco de dados MongoDB.
+
+função de interceptação, ele vai interceptar minha rota, recebe req de cliente e res,
+e responde, retornando next executando a função desejada.
+utilizado para não fazer mais de uma consulta de uma vez, pois pego da requisição.
+
+----------------------------------------------------------------------------------------
