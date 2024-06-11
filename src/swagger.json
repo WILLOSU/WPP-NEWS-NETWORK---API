@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "",
+      "url": "https://wpp-news-network-api.onrender.com",
       "description": "Render Server"
     },
     {
