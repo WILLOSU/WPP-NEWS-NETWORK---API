@@ -1,12 +1,15 @@
 import mongoose from "mongoose";
 
 const connectDatabase = () => {
-  console.log("wait connecting to the database");
+  console.log("wait conecting to the database");
 
   mongoose
-    .connect(process.env.MONGODB_URI)
+    .connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
     .then(() => console.log("MongoDB connected"))
-    .catch((error) => console.error("Database connection error:", error));
+    .catch((error) => console.log(error));
 };
 
 export default connectDatabase;
