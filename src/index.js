@@ -16,7 +16,7 @@ const port = process.env.PORT || 5173;
 
 app.use(
   cors({
-    origin: ["https://wppnews.vercel.app/", "http://localhost:5173"],
+    origin: ["https://wppnews.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"],
   })
 );
