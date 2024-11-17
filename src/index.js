@@ -12,7 +12,7 @@ import userRoute from "./routes/user.route.js"; // importando todas as rotas
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5173;
 
 app.use(
   cors({
