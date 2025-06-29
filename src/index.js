@@ -1,13 +1,13 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../swagger.json' assert { type: 'json' };
 import connectDatabase from "./database/db.js";
 
-//ROTAS
 import authRoute from "./routes/auth.route.js";
 import newsRoute from "./routes/news.route.js";
-import swaggerRoute from "./routes/swagger.route.cjs";
-import userRoute from "./routes/user.route.js"; // importando todas as rotas
+import userRoute from "./routes/user.route.js";
 
 dotenv.config();
 
@@ -23,10 +23,12 @@ app.use(
 
 connectDatabase();
 
-app.use(express.json()); // aplicação apta para enviar e receber arquivos json
-app.use("/user", userRoute); // usando a rota
+app.use(express.json());
+
+app.use('/doc', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.use("/user", userRoute);
 app.use("/auth", authRoute);
 app.use("/news", newsRoute);
-app.use("/doc", swaggerRoute);
 
 app.listen(port, () => console.log(`Rodando na porta ${port}`));
