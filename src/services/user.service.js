@@ -2,27 +2,20 @@ import User from "../models/User.js";
 
 const createService = (body) => User.create(body);
 
-const findAllService = () => User.find(); // find() função do mongoose para buscar todos os usuários.
+const findAllService = () => User.find({ isActive: true });
 
 const findByIdService = (id) => User.findById(id);
 
-const updateService = (
-  id,
-  name,
-  username,
-  email,
-  password,
-  avatar,
-  background
-) =>
-  User.findOneAndUpdate(
-    { _id: id }, //find one
-    { name, username, email, password, avatar, background } // and update
-  );
+const updateService = (id, data) =>
+  User.findOneAndUpdate({ _id: id }, data, { new: true });
+
+const deactivateService = (id) =>
+  User.findOneAndUpdate({ _id: id }, { isActive: false });
 
 export default {
   createService,
   findAllService,
   findByIdService,
   updateService,
+  deactivateService,
 };

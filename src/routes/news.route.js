@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-const router = Router();
+import { authRole } from "../middlewares/authRole.js";
 
 import {
   create,
@@ -14,7 +14,11 @@ import {
   likesNews,
   addComment,
   deleteComment,
-} from "../controllers/news.controllers.js";
+  moderateNews, // <--- GARANTA QUE moderateNews ESTEJA IMPORTADO AQUI
+  hardDeleteNews,
+} from "../controllers/news.controllers.js"; // <--- E que a importação seja do news.controllers.js
+
+const router = Router(); // Use 'router' aqui, não 'route' para news.routes.js
 
 router.post("/", authMiddleware, create);
 router.get("/", findAll);
@@ -28,4 +32,8 @@ router.patch("/like/:id", authMiddleware, likesNews);
 router.patch("/comment/:id", authMiddleware, addComment);
 router.patch("/comment/:idNews/:idComment", authMiddleware, deleteComment);
 
-export default router;
+router.patch("/moderate/:id", authMiddleware, authRole("admin"), moderateNews); // <--- Agora 'moderateNews' será definido
+
+router.delete("/hard/:id", authMiddleware, authRole('admin'), hardDeleteNews); // Nova rota de hard delete
+
+export default router; // Use 'router' aqui

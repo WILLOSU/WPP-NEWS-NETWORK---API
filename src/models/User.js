@@ -1,3 +1,5 @@
+
+
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 
@@ -28,10 +30,26 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  role: {
+    type: String,
+    enum: ['common', 'admin'],
+    default: 'common',
+    required: true,
+  },
+  
+  isActive: {
+    type: Boolean,
+    default: true, 
+    required: true,
+  },
+
 });
 
-//criptografar senha
+// Criptografar senha antes de salvar
 UserSchema.pre("save", async function (next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });

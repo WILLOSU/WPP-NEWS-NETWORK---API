@@ -5,42 +5,56 @@ const createNewsService = async (body) => {
   return await News.create(body);
 };
 
-const findAllService = (limit, offset) =>
-  News.find().sort({ _id: -1 }).skip(offset).limit(limit).populate("user");
+const findAllService = (limit, offset, query = { status: "published" }) =>
+  News.find(query) // Aplica o filtro de query (por padrão, { status: 'published' })
+    .sort({ _id: -1 })
+    .skip(offset)
+    .limit(limit)
+    .populate("user");
 
-const countNews = () => News.countDocuments();
+const countNews = (query = { status: "published" }) =>
+  News.countDocuments(query);
 
-const topNewsService = () => News.findOne().sort({ _id: -1 }).populate("user");
+const topNewsService = (query = { status: "published" }) =>
+  News.findOne(query).sort({ _id: -1 }).populate("user");
 
-const findByIdService = (id) => News.findById(id);
+const findByIdService = (id) => News.findById(id).populate("user");
 
-const findBySearchService = (title, limit, offset) =>
+const findBySearchService = (
+  title,
+  limit,
+  offset,
+  extraQuery = { status: "published" }
+) =>
   News.find({
-    title: { $regex: `${title || ""}`, $options: "i" }, //expressão regular do mongoDB
+    title: { $regex: `${title || ""}`, $options: "i" },
+    ...extraQuery,
   })
     .sort({ _id: -1 })
     .skip(offset)
     .limit(limit)
     .populate("user");
 
-const countNewsFilter = (title) =>
-  News.find({
-    title: { $regex: `${title || ""}`, $options: "i" }, //expressão regular do mongoDB
-  }).countDocuments();
+const countNewsFilter = (title, extraQuery = { status: "published" }) =>
+  News.countDocuments({
+    title: { $regex: `${title || ""}`, $options: "i" },
+    ...extraQuery,
+  });
 
-// console.log(countNewsFilter());
+const byUserService = (id, query = {}) =>
+  News.find({ user: id, ...query })
+    .sort({ _id: -1 })
+    .populate("user");
 
-const byUserService = (id) =>
-  News.find({ user: id }).sort({ _id: -1 }).populate("user");
+const upDateService = (id, data) =>
+  News.findByIdAndUpdate({ _id: id }, data, { new: true });
 
-const upDateService = (id, title, text, banner) =>
+const deactivateNewsService = (id) =>
   News.findByIdAndUpdate(
     { _id: id },
-    { title, text, banner },
-    { rawResult: true }
+    { status: "inactive" }, // Agora seta para 'inactive'
+    { new: true }
   );
-
-const eraseService = (id) => News.findByIdAndDelete({ _id: id });
 
 const likesNewsService = (idNews, userId) =>
   News.findOneAndUpdate(
@@ -57,10 +71,8 @@ const addCommentService = async (idNews, userId, comment) => {
 
     const { name, avatar } = await User.findOne({ _id: userId });
 
-    await News.findOneAndUpdate(
-      {
-        _id: idNews,
-      },
+    const updatedNews = await News.findOneAndUpdate(
+      { _id: idNews },
       {
         $push: {
           comments: {
@@ -72,19 +84,29 @@ const addCommentService = async (idNews, userId, comment) => {
             createdAt: new Date(),
           },
         },
-      }
+      },
+      { new: true }
     );
-    return News.findOne({ _id: idNews });
+    return updatedNews;
   } catch (error) {
     console.log(error);
+
+    throw new Error("Erro ao adicionar comentário: " + error.message);
   }
 };
 
-const deleteCommentService = (idNews, userId, idComment) =>
+const deleteCommentService = (idNews, idComment) =>
   News.findOneAndUpdate(
     { _id: idNews },
-    { $pull: { comments: { userId, idComment } } }
+    { $pull: { comments: { idComment } } }
+    // Lógica de userId para deletar comentário está no controller
   );
+
+const moderateNewsService = (id, newStatus) =>
+  News.findByIdAndUpdate({ _id: id }, { status: newStatus }, { new: true });
+
+
+const hardDeleteNewsService = (id) => News.findByIdAndDelete({ _id: id });
 
 export {
   addCommentService,
@@ -94,11 +116,15 @@ export {
   createNewsService,
   deleteCommentService,
   deleteLikesNewsService,
-  eraseService,
+  deactivateNewsService, // Novo nome para o "soft delete"
+  moderateNewsService,
   findAllService,
   findByIdService,
   findBySearchService,
   likesNewsService,
   topNewsService,
   upDateService,
+  hardDeleteNewsService,
 };
+
+

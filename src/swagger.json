@@ -2,45 +2,58 @@
   "openapi": "3.0.0",
   "info": {
     "title": "WPP NEWS API Documentation",
-    "description": "In this documentation you will be able to consult the API end-points and also test all available routes. Do not forget to register and carry out the authorization.",
+    "description": "Nesta documentação você poderá consultar e testar todos os endpoints da API. Lembre-se de registrar e realizar a autorização (login) para acessar rotas protegidas.",
     "contact": {
-      "email": ""
+      "email": "seuemail@exemplo.com"
     },
     "version": "1.0.0"
   },
   "servers": [
-
-    
     {
-      "url": "https://wpp-news-network-api.onrender.com",
-      "description": "Render Server"
+      "url": "https://willnews-api.onrender.com",
+      "description": "Render Server (Produção)"
     },
     {
-      "url": "http://localhost:3000",
-      "description": "Local Server"
+      "url": "http://localhost:5173",
+      "description": "Local Server (Desenvolvimento)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticação",
+      "description": "Rotas para registro e login de usuários."
+    },
+    {
+      "name": "Usuários",
+      "description": "Rotas para gestão de perfis de usuário."
+    },
+    {
+      "name": "Notícias",
+      "description": "Rotas para criação, visualização, atualização e moderação de notícias."
     }
   ],
   "paths": {
-    "/user/": {
+    "/user": {
       "post": {
-        "summary": "Create a new user",
-        "description": "Route responsible for creating a new user",
-        "tags": ["Users"],
+        "summary": "Cria um novo usuário",
+        "description": "Permite o registro de um novo usuário na plataforma.",
+        "tags": ["Usuários"],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/User"
+                "$ref": "#/components/schemas/UserRequest"
               },
               "examples": {
-                "Users": {
+                "Novo Usuário": {
                   "value": {
-                    "name": "Cacau Lima",
-                    "username": "cacode",
-                    "email": "clima@gmail.com",
-                    "password": "1234567",
-                    "avatar": "https://i.imgur.com/Ry1cb5M.png",
-                    "background": "https://images.wallpapersden.com/image/download/triangle-8k-blue-pattern_bGZlbmiUmZqaraWkpJRmbmdlrWZlbWU.jpg"
+                    "name": "João Silva",
+                    "username": "joao.silva",
+                    "email": "joao.silva@email.com",
+                    "password": "senhaSegura123",
+                    "avatar": "https://i.imgur.com/avatar.png",
+                    "background": "https://images.wallpapersden.com/image.jpg"
                   }
                 }
               }
@@ -48,36 +61,31 @@
           }
         },
         "responses": {
-          "400": {
-            "description": "Not Found"
-          },
           "201": {
-            "description": "Created",
+            "description": "Usuário criado com sucesso",
             "content": {
               "application/json": {
-                "schemma": {
+                "schema": {
                   "type": "object",
-                  "$ref": "#/components/schemas/User"
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/UserResponse" }
+                  }
                 }
               }
             }
-          }
+          },
+          "400": { "description": "Campos obrigatórios ausentes" },
+          "409": { "description": "Email ou nome de usuário já cadastrado" },
+          "500": { "description": "Erro interno do servidor" }
         }
-      }
-    },
-    "/user": {
+      },
       "get": {
-        "summary": "Search all users",
-        "description": "Route responsible for fetching all users",
-        "tags": ["Users"],
+        "summary": "Lista todos os usuários (APENAS ADMIN)",
+        "description": "Retorna uma lista de todos os usuários registrados. Requer token de administrador.",
+        "tags": ["Usuários"],
         "security": [{ "bearerAuth": [] }],
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -85,76 +93,81 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/User"
+                    "$ref": "#/components/schemas/UserResponse"
                   }
                 }
               }
             }
-          }
+          },
+          "401": { "description": "Não autorizado (token inválido/ausente)" },
+          "403": { "description": "Acesso negado (não é administrador)" },
+          "400": { "description": "Nenhum usuário encontrado" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
-    "/user/{id}/": {
+    "/user/{id}": {
       "get": {
-        "summary": "Search user by id",
-        "description": "Route responsible for searching for user by id",
-        "tags": ["Users"],
+        "summary": "Busca usuário por ID",
+        "description": "Retorna os detalhes de um usuário específico. Requer autenticação.",
+        "tags": ["Usuários"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "User ID",
+            "schema": { "type": "string" },
+            "description": "ID do Usuário",
             "required": true
           }
         ],
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/UserResponse"
                 }
               }
             }
-          }
+          },
+          "401": { "description": "Não autorizado" },
+          "400": { "description": "ID inválido ou usuário não encontrado" },
+          "500": { "description": "Erro interno do servidor" }
         }
-      }
-    },
-    "/user/{id}": {
+      },
       "patch": {
-        "summary": "Update user by id",
-        "description": "Route responsible for editing the user by id",
-        "tags": ["Users"],
+        "summary": "Atualiza parcialmente um usuário (Dono ou Admin)",
+        "description": "Permite a atualização parcial dos dados de um usuário. O usuário só pode atualizar seu próprio perfil; administradores podem atualizar qualquer perfil (inclusive o papel).",
+        "tags": ["Usuários"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "User ID",
+            "schema": { "type": "string" },
+            "description": "ID do Usuário a ser atualizado",
             "required": true
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/User"
+                "$ref": "#/components/schemas/UserUpdate"
               },
               "examples": {
-                "Users": {
+                "Atualizar Nome e Avatar": {
                   "value": {
-                    "name": "Thiago Lima"
+                    "name": "Thiago Lima Atualizado",
+                    "avatar": "https://nova-imagem.jpg"
+                  }
+                },
+                "Alterar Papel (APENAS ADMIN)": {
+                  "value": {
+                    "role": "admin"
                   }
                 }
               }
@@ -162,42 +175,60 @@
           }
         },
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
+          "200": { "description": "Usuário atualizado com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é dono ou admin)" },
+          "400": { "description": "Campos inválidos" },
+          "409": { "description": "Email ou nome de usuário já cadastrado" },
+          "500": { "description": "Erro interno do servidor" }
+        }
+      },
+      "delete": {
+        "summary": "Desativa um usuário (Soft Delete - Dono ou Admin)",
+        "description": "Muda o status do usuário para 'inativo'. O usuário pode desativar a si mesmo; administradores podem desativar qualquer usuário.",
+        "tags": ["Usuários"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "string" },
+            "description": "ID do Usuário a ser desativado",
+            "required": true
           }
+        ],
+        "responses": {
+          "200": { "description": "Usuário desativado com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é dono ou admin)" },
+          "400": { "description": "ID inválido" },
+          "404": { "description": "Usuário não encontrado" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/auth": {
       "post": {
-        "summary": "Login to WPP",
-        "description": "Route responsible for logging in a registered user",
-        "tags": ["Auth"],
+        "summary": "Login de Usuário",
+        "description": "Realiza o login de um usuário e retorna um token JWT para acesso autenticado.",
+        "tags": ["Autenticação"],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/User"
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" }
+                },
+                "required": ["email", "password"]
               },
               "examples": {
-                "User": {
+                "Credenciais de Login": {
                   "value": {
-                    "email": "clima@gmail.com",
-                    "password": "1234567"
+                    "email": "joao.silva@email.com",
+                    "password": "senhaSegura123"
                   }
                 }
               }
@@ -205,249 +236,292 @@
           }
         },
         "responses": {
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/news/": {
-      "post": {
-        "summary": "Create a new news",
-        "description": "Route responsible for creating a new News",
-        "tags": ["News"],
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/News"
-              },
-              "examples": {
-                "News": {
-                  "value": {
-                    "user": "",
-                    "banner": "https://labs.tadigital.com/wp-content/uploads/2017/07/ES6-banner.jpg",
-                    "title": "ECMAScript 6",
-                    "text": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.",
-                    "likes": [],
-                    "comments": []
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "201": {
-            "description": "Created",
+            "description": "Login bem-sucedido",
             "content": {
               "application/json": {
-                "schemma": {
+                "schema": {
                   "type": "object",
-                  "$ref": "#/components/schemas/News"
+                  "properties": {
+                    "token": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/UserResponse" }
+                  }
                 }
               }
             }
-          }
+          },
+          "400": { "description": "Credenciais inválidas" },
+          "403": { "description": "Token inválido/expirado" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news": {
+      "post": {
+        "summary": "Cria uma nova notícia",
+        "description": "Permite criar uma nova notícia. Usuários comuns criam notícias como 'pendente'. Administradores podem criar como 'publicado'.",
+        "tags": ["Notícias"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsRequest"
+              },
+              "examples": {
+                "Nova Notícia": {
+                  "value": {
+                    "title": "Minha Nova Notícia",
+                    "text": "Conteúdo da minha notícia a ser criada.",
+                    "banner": "https://example.com/banner-nova-noticia.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notícia criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "news": { "$ref": "#/components/schemas/NewsResponse" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Não autorizado" },
+          "400": { "description": "Campos obrigatórios ausentes" },
+          "500": { "description": "Erro interno do servidor" }
+        }
+      },
       "get": {
-        "summary": "Search all posts",
-        "description": "Route responsible for fetching all posts",
-        "tags": ["News"],
+        "summary": "Lista todas as notícias publicadas",
+        "description": "Retorna uma lista paginada de notícias com status 'publicado'. Não requer autenticação.",
+        "tags": ["Notícias"],
         "parameters": [
           {
             "in": "query",
             "name": "limit",
-            "type": "string"
+            "schema": { "type": "integer" },
+            "description": "Número máximo de notícias por página",
+            "required": false
           },
           {
             "in": "query",
             "name": "offset",
-            "type": "string"
+            "schema": { "type": "integer" },
+            "description": "Número de notícias a pular (para paginação)",
+            "required": false
           }
         ],
         "responses": {
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/News"
+                  "type": "object",
+                  "properties": {
+                    "nextUrl": { "type": "string", "nullable": true },
+                    "previousUrl": { "type": "string", "nullable": true },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NewsResponse"
+                      }
+                    }
                   }
                 }
               }
             }
-          }
+          },
+          "400": { "description": "Nenhuma notícia publicada encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/top": {
       "get": {
-        "summary": "Search top News",
-        "description": "Route responsible for fetching top News",
-        "tags": ["News"],
+        "summary": "Busca a notícia mais popular/recente publicada",
+        "description": "Retorna a notícia mais recente (assumindo que 'popular' é a mais recente). Não requer autenticação.",
+        "tags": ["Notícias"],
         "responses": {
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
-                "schemma": {
-                  "type": "object",
-                  "$ref": "#/components/schemas/News"
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
                 }
               }
             }
-          }
+          },
+          "404": { "description": "Nenhuma notícia encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/search": {
       "get": {
-        "summary": "Search News by title",
-        "description": "Route responsible for fetching the News that match the title sent via query params",
-        "tags": ["News"],
-        "security": [{ "bearerAuth": [] }],
+        "summary": "Busca notícias por título",
+        "description": "Retorna notícias com status 'publicado' que correspondem ao título pesquisado. Não requer autenticação.",
+        "tags": ["Notícias"],
         "parameters": [
           {
             "in": "query",
             "name": "title",
-            "type": "string",
+            "schema": { "type": "string" },
+            "description": "Título da notícia para buscar",
             "required": true
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer" },
+            "description": "Número máximo de notícias por página",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": { "type": "integer" },
+            "description": "Número de notícias a pular (para paginação)",
+            "required": false
           }
         ],
         "responses": {
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/News"
+                  "type": "object",
+                  "properties": {
+                    "nextUrl": { "type": "string", "nullable": true },
+                    "previousUrl": { "type": "string", "nullable": true },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NewsResponse"
+                      }
+                    }
                   }
                 }
               }
             }
-          }
+          },
+          "400": { "description": "Nenhuma notícia encontrada com o título" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/byUser": {
       "get": {
-        "summary": "Search news by use id",
-        "description": "Route responsible for fetching news by use id",
-        "tags": ["News"],
+        "summary": "Lista notícias por ID de usuário (Dono)",
+        "description": "Retorna todas as notícias criadas pelo usuário autenticado (incluindo pendentes/rejeitadas/inativas). Requer autenticação.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "responses": {
-          "400": {
-            "description": "Not Found"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/News"
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NewsResponse"
+                      }
+                    }
                   }
                 }
               }
             }
-          }
+          },
+          "401": { "description": "Não autorizado" },
+          "400": { "description": "Nenhuma notícia encontrada para este usuário" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/{id}": {
       "get": {
-        "summary": "Search News by id",
-        "description": "Route responsible for fetching News by id",
-        "tags": ["News"],
+        "summary": "Busca notícia por ID",
+        "description": "Retorna os detalhes de uma notícia específica. Notícias 'publicadas' são visíveis a todos. Notícias 'pendentes'/'rejeitadas'/'inativas' são visíveis apenas ao autor ou a um administrador.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "News ID",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia",
             "required": true
           }
         ],
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
-                "schemma": {
-                  "type": "object",
-                  "$ref": "#/components/schemas/News"
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
                 }
               }
             }
-          }
+          },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não publicada ou sem permissão)" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
-      }
-    },
-    "/news/{id}": {
+      },
       "patch": {
-        "summary": "Update a News",
-        "description": "Route responsible for updating a News",
-        "tags": ["News"],
+        "summary": "Atualiza parcialmente uma notícia (Dono ou Admin)",
+        "description": "Permite a atualização parcial dos dados de uma notícia. O autor pode editar o conteúdo; administradores podem editar o conteúdo E alterar o status.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "Post ID",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia a ser atualizada",
             "required": true
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/News"
+                "$ref": "#/components/schemas/NewsUpdate"
               },
               "examples": {
-                "Post": {
+                "Atualizar Conteúdo": {
                   "value": {
-                    "banner": "Edit",
-                    "title": "Edit",
-                    "text": "Edit"
+                    "title": "Novo Título da Notícia",
+                    "text": "Novo texto para a notícia."
+                  }
+                },
+                "Alterar Status (APENAS ADMIN)": {
+                  "value": {
+                    "status": "published"
                   }
                 }
               }
@@ -455,158 +529,209 @@
           }
         },
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schemma": {
-                  "type": "object",
-                  "$ref": "#/components/schemas/News"
-                }
-              }
-            }
-          }
+          "200": { "description": "Notícia atualizada com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é dono, admin, ou tenta alterar status sem permissão)" },
+          "400": { "description": "Campos inválidos" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
-      }
-    },
-    "/news/{id}/": {
+      },
       "delete": {
-        "summary": "Delete a News",
-        "description": "Route responsible for deleting a News",
-        "tags": ["News"],
+        "summary": "Desativa uma notícia (Soft Delete - Dono ou Admin)",
+        "description": "Muda o status da notícia para 'inativo'. O autor pode inativar sua própria notícia; administradores podem inativar qualquer notícia.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "News ID",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia a ser inativada",
             "required": true
           }
         ],
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "200": {
-            "description": "OK"
+          "200": { "description": "Notícia inativada com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é dono ou admin)" },
+          "400": { "description": "ID inválido" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
+        }
+      }
+    },
+    "/news/moderate/{id}": {
+      "patch": {
+        "summary": "Modera o status de uma notícia (APENAS ADMIN)",
+        "description": "Altera o status de uma notícia para 'pending', 'published' ou 'rejected'. Requer token de administrador.",
+        "tags": ["Notícias"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia a ser moderada",
+            "required": true
           }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "published", "rejected"],
+                    "description": "Novo status da notícia"
+                  }
+                },
+                "required": ["status"]
+              },
+              "examples": {
+                "Publicar Notícia": {
+                  "value": { "status": "published" }
+                },
+                "Rejeitar Notícia": {
+                  "value": { "status": "rejected" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status da notícia atualizado com sucesso" },
+          "400": { "description": "Status inválido" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é administrador)" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
+        }
+      }
+    },
+    "/news/hard/{id}": {
+      "delete": {
+        "summary": "Exclui uma notícia permanentemente (APENAS ADMIN)",
+        "description": "Remove uma notícia do banco de dados de forma definitiva. **Esta ação é irreversível.** Requer token de administrador.",
+        "tags": ["Notícias"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia a ser excluída permanentemente",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": { "description": "Notícia excluída permanentemente com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é administrador)" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/like/{id}": {
       "patch": {
-        "summary": "Like a News",
-        "description": "Route responsible for liking a News",
-        "tags": ["News"],
+        "summary": "Curte/Descurte uma Notícia",
+        "description": "Permite curtir ou descurtir uma notícia. Se o usuário já curtiu, o like é removido; caso contrário, é adicionado. Requer autenticação.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "User ID",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia",
             "required": true
           }
         ],
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "200": {
-            "description": "OK"
-          }
+          "200": { "description": "Like adicionado/removido com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "400": { "description": "ID inválido" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/comment/{id}": {
       "patch": {
-        "summary": "Comment on a News",
-        "description": "Route responsible for commenting on a News",
-        "tags": ["News"],
+        "summary": "Comenta em uma Notícia",
+        "description": "Adiciona um comentário a uma notícia. Requer autenticação.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "type": "string",
-            "description": "News ID",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia",
             "required": true
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Comment"
+                "type": "object",
+                "properties": {
+                  "comment": { "type": "string", "description": "O texto do comentário" }
+                },
+                "required": ["comment"]
               },
               "examples": {
-                "Comment": {
-                  "value": {
-                    "message": "Comentário legal"
-                  }
+                "Adicionar Comentário": {
+                  "value": { "comment": "Que notícia interessante!" }
                 }
               }
             }
           }
         },
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "200": {
-            "description": "OK"
-          }
+          "200": { "description": "Comentário adicionado com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "400": { "description": "Comentário vazio ou ID inválido" },
+          "404": { "description": "Notícia não encontrada" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     },
     "/news/comment/{idNews}/{idComment}": {
-      "patch": {
-        "summary": "Comment on a News",
-        "description": "Route responsible for commenting on a News",
-        "tags": ["News"],
+      "delete": {
+        "summary": "Deleta um comentário",
+        "description": "Remove um comentário de uma notícia. O autor do comentário ou um administrador pode deletar. Requer autenticação.",
+        "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "in": "path",
             "name": "idNews",
-            "type": "string",
-            "description": "News ID",
+            "schema": { "type": "string" },
+            "description": "ID da Notícia",
             "required": true
           },
           {
             "in": "path",
             "name": "idComment",
-            "type": "string",
-            "description": "Comment ID",
+            "schema": { "type": "string" },
+            "description": "ID do Comentário",
             "required": true
           }
         ],
         "responses": {
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Not Found"
-          },
-          "200": {
-            "description": "OK"
-          }
+          "200": { "description": "Comentário removido com sucesso" },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é autor ou admin)" },
+          "400": { "description": "ID inválido" },
+          "404": { "description": "Notícia ou comentário não encontrado" },
+          "500": { "description": "Erro interno do servidor" }
         }
       }
     }
@@ -620,61 +745,106 @@
       }
     },
     "schemas": {
-      "User": {
+      "UserRequest": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "avatar": {
-            "type": "string"
-          },
-          "background": {
-            "type": "string"
-          }
+          "name": { "type": "string", "example": "Usuário Teste" },
+          "username": { "type": "string", "example": "test.user" },
+          "email": { "type": "string", "format": "email", "example": "teste@email.com" },
+          "password": { "type": "string", "format": "password", "example": "minhasenha123" },
+          "avatar": { "type": "string", "nullable": true, "example": "https://i.imgur.com/avatar.png" },
+          "background": { "type": "string", "nullable": true, "example": "https://images.wallpapersden.com/image.jpg" }
+        },
+        "required": ["name", "username", "email", "password"]
+      },
+      "UserUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "Usuário Teste Atualizado" },
+          "username": { "type": "string", "example": "test.user.upd" },
+          "email": { "type": "string", "format": "email", "example": "teste_upd@email.com" },
+          "password": { "type": "string", "format": "password", "example": "novaSenha456" },
+          "avatar": { "type": "string", "nullable": true, "example": "https://i.imgur.com/new_avatar.png" },
+          "background": { "type": "string", "nullable": true, "example": "https://images.wallpapersden.com/new_image.jpg" },
+          "role": { "type": "string", "enum": ["common", "admin"], "description": "Papel do usuário (apenas administradores podem alterar)", "example": "admin" }
         }
       },
-      "News": {
+      "UserResponse": {
         "type": "object",
         "properties": {
-          "user": {
-            "type": "string"
-          },
-          "banner": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "text": {
-            "type": "string"
-          },
+          "id": { "type": "string", "format": "uuid", "example": "654321098765432109876543" },
+          "name": { "type": "string", "example": "Usuário Teste" },
+          "username": { "type": "string", "example": "test.user" },
+          "email": { "type": "string", "format": "email", "example": "teste@email.com" },
+          "avatar": { "type": "string", "nullable": true, "example": "https://i.imgur.com/avatar.png" },
+          "background": { "type": "string", "nullable": true, "example": "https://images.wallpapersden.com/image.jpg" },
+          "role": { "type": "string", "enum": ["common", "admin"], "example": "common" },
+          "isActive": { "type": "boolean", "example": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "NewsRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Título da Minha Notícia" },
+          "text": { "type": "string", "example": "Conteúdo completo da notícia aqui." },
+          "banner": { "type": "string", "nullable": true, "example": "https://example.com/banner-noticia.jpg" }
+        },
+        "required": ["title", "text"]
+      },
+      "NewsUpdate": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Novo Título da Notícia" },
+          "text": { "type": "string", "example": "Novo conteúdo da notícia aqui." },
+          "banner": { "type": "string", "nullable": true, "example": "https://example.com/new-banner.jpg" },
+          "status": { "type": "string", "enum": ["pending", "published", "rejected", "inactive"], "description": "Status da notícia (apenas administradores podem alterar)", "example": "published" }
+        }
+      },
+      "NewsResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "654321098765432109876543" },
+          "title": { "type": "string", "example": "Título da Minha Notícia" },
+          "text": { "type": "string", "example": "Conteúdo completo da notícia aqui." },
+          "banner": { "type": "string", "nullable": true, "example": "https://example.com/banner-noticia.jpg" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "user": { "$ref": "#/components/schemas/UserResponse" },
+          "status": { "type": "string", "enum": ["pending", "published", "rejected", "inactive"], "example": "pending" },
           "likes": {
-            "type": "number"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": { "type": "string", "format": "uuid", "example": "654321098765432109876543" },
+                "created": { "type": "string", "format": "date-time" }
+              }
+            }
           },
           "comments": {
-            "type": "array"
-          },
-          "createdAt": {
-            "type": "date"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentResponse"
+            }
           }
         }
       },
-      "Comment": {
+      "CommentRequest": {
         "type": "object",
         "properties": {
-          "message": {
-            "type": "string"
-          }
+          "comment": { "type": "string", "example": "Este é um novo comentário." }
+        },
+        "required": ["comment"]
+      },
+      "CommentResponse": {
+        "type": "object",
+        "properties": {
+          "idComment": { "type": "string", "example": "ab1c2d3e4f5g" },
+          "userId": { "type": "string", "format": "uuid", "example": "654321098765432109876543" },
+          "name": { "type": "string", "example": "Nome do Comentador" },
+          "avatar": { "type": "string", "nullable": true, "example": "https://i.imgur.com/comment_avatar.png" },
+          "comment": { "type": "string", "example": "Este é um novo comentário." },
+          "createdAt": { "type": "string", "format": "date-time" }
         }
       }
     }

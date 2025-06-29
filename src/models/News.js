@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const NewsSchema = new mongoose.Schema({
@@ -22,6 +23,14 @@ const NewsSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+
+  status: {
+    type: String,
+    enum: ['pending', 'published', 'rejected', 'inactive'], 
+    default: 'pending',                      
+    required: true,
+  },
+
   likes: {
     type: Array,
     required: true,
