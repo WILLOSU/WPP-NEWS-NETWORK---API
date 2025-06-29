@@ -1,8 +1,18 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from '../swagger.json' assert { type: 'json' };
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const swaggerDocument = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "../swagger.json"), "utf8")
+);
+
 import connectDatabase from "./database/db.js";
 
 import authRoute from "./routes/auth.route.js";
@@ -25,7 +35,7 @@ connectDatabase();
 
 app.use(express.json());
 
-app.use('/doc', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use("/doc", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/user", userRoute);
 app.use("/auth", authRoute);
