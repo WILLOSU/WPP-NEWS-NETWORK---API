@@ -1,31 +1,20 @@
-import News from "../models/News.js";
-import User from "../models/User.js";
+import News from "../models/News.js"
+import User from "../models/User.js"
 
 const createNewsService = async (body) => {
-  return await News.create(body);
-};
+  return await News.create(body)
+}
 
 const findAllService = (limit, offset, query = { status: "published" }) =>
-  News.find(query) // Aplica o filtro de query (por padrão, { status: 'published' })
-    .sort({ _id: -1 })
-    .skip(offset)
-    .limit(limit)
-    .populate("user");
+  News.find(query).sort({ _id: -1 }).skip(offset).limit(limit).populate("user")
 
-const countNews = (query = { status: "published" }) =>
-  News.countDocuments(query);
+const countNews = (query = { status: "published" }) => News.countDocuments(query)
 
-const topNewsService = (query = { status: "published" }) =>
-  News.findOne(query).sort({ _id: -1 }).populate("user");
+const topNewsService = (query = { status: "published" }) => News.findOne(query).sort({ _id: -1 }).populate("user")
 
-const findByIdService = (id) => News.findById(id).populate("user");
+const findByIdService = (id) => News.findById(id).populate("user")
 
-const findBySearchService = (
-  title,
-  limit,
-  offset,
-  extraQuery = { status: "published" }
-) =>
+const findBySearchService = (title, limit, offset, extraQuery = { status: "published" }) =>
   News.find({
     title: { $regex: `${title || ""}`, $options: "i" },
     ...extraQuery,
@@ -33,43 +22,44 @@ const findBySearchService = (
     .sort({ _id: -1 })
     .skip(offset)
     .limit(limit)
-    .populate("user");
+    .populate("user")
 
 const countNewsFilter = (title, extraQuery = { status: "published" }) =>
   News.countDocuments({
     title: { $regex: `${title || ""}`, $options: "i" },
     ...extraQuery,
-  });
+  })
 
-const byUserService = (id, query = {}) =>
-  News.find({ user: id, ...query })
-    .sort({ _id: -1 })
-    .populate("user");
+// CORRIGIDO: byUserService com debug
+const byUserService = (id, query = {}) => {
+  console.log("DEBUG byUserService - ID recebido:", id)
+  console.log("DEBUG byUserService - Tipo do ID:", typeof id)
+  console.log("DEBUG byUserService - Query adicional:", query)
 
-const upDateService = (id, data) =>
-  News.findByIdAndUpdate({ _id: id }, data, { new: true });
+  // Tentar ambas as formas de busca
+  const searchQuery = { user: id, ...query }
+  console.log("DEBUG byUserService - Query final:", searchQuery)
 
-const deactivateNewsService = (id) =>
-  News.findByIdAndUpdate(
-    { _id: id },
-    { status: "inactive" }, // Agora seta para 'inactive'
-    { new: true }
-  );
+  return News.find(searchQuery).sort({ _id: -1 }).populate("user")
+}
+
+const upDateService = (id, data) => News.findByIdAndUpdate({ _id: id }, data, { new: true })
+
+const deactivateNewsService = (id) => News.findByIdAndUpdate({ _id: id }, { status: "inactive" }, { new: true })
 
 const likesNewsService = (idNews, userId) =>
   News.findOneAndUpdate(
     { _id: idNews, "likes.userId": { $nin: [userId] } },
-    { $push: { likes: { userId, created: new Date() } } }
-  );
+    { $push: { likes: { userId, created: new Date() } } },
+  )
 
 const deleteLikesNewsService = (idNews, userId) =>
-  News.findOneAndUpdate({ _id: idNews }, { $pull: { likes: { userId } } });
+  News.findOneAndUpdate({ _id: idNews }, { $pull: { likes: { userId } } })
 
 const addCommentService = async (idNews, userId, comment) => {
   try {
-    const idComment = Math.floor(Date.now() * Math.random()).toString(36);
-
-    const { name, avatar } = await User.findOne({ _id: userId });
+    const idComment = Math.floor(Date.now() * Math.random()).toString(36)
+    const { name, avatar } = await User.findOne({ _id: userId })
 
     const updatedNews = await News.findOneAndUpdate(
       { _id: idNews },
@@ -85,28 +75,22 @@ const addCommentService = async (idNews, userId, comment) => {
           },
         },
       },
-      { new: true }
-    );
-    return updatedNews;
-  } catch (error) {
-    console.log(error);
+      { new: true },
+    )
 
-    throw new Error("Erro ao adicionar comentário: " + error.message);
+    return updatedNews
+  } catch (error) {
+    console.log(error)
+    throw new Error("Erro ao adicionar comentário: " + error.message)
   }
-};
+}
 
 const deleteCommentService = (idNews, idComment) =>
-  News.findOneAndUpdate(
-    { _id: idNews },
-    { $pull: { comments: { idComment } } }
-    // Lógica de userId para deletar comentário está no controller
-  );
+  News.findOneAndUpdate({ _id: idNews }, { $pull: { comments: { idComment } } })
 
-const moderateNewsService = (id, newStatus) =>
-  News.findByIdAndUpdate({ _id: id }, { status: newStatus }, { new: true });
+const moderateNewsService = (id, newStatus) => News.findByIdAndUpdate({ _id: id }, { status: newStatus }, { new: true })
 
-
-const hardDeleteNewsService = (id) => News.findByIdAndDelete({ _id: id });
+const hardDeleteNewsService = (id) => News.findByIdAndDelete({ _id: id })
 
 export {
   addCommentService,
@@ -116,7 +100,7 @@ export {
   createNewsService,
   deleteCommentService,
   deleteLikesNewsService,
-  deactivateNewsService, // Novo nome para o "soft delete"
+  deactivateNewsService,
   moderateNewsService,
   findAllService,
   findByIdService,
@@ -125,6 +109,4 @@ export {
   topNewsService,
   upDateService,
   hardDeleteNewsService,
-};
-
-
+}

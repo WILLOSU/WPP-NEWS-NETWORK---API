@@ -77,7 +77,6 @@ const findAllForAdmin = async (req, res) => {
   }
 }
 
-// Mantenha todas as outras funções existentes...
 const create = async (req, res) => {
   try {
     const { title, text, banner } = req.body
@@ -217,36 +216,24 @@ const addComment = async (req, res) => {
   }
 }
 
+// CORRIGIDO: byUser agora usa req.userId do token em vez de req.params.userId
 const byUser = async (req, res) => {
   try {
-    const { userId } = req.params
-    let { limit, offset } = req.query
+    const id = req.userId // MUDANÇA: usar req.userId do token JWT
+    console.log("DEBUG byUser - req.userId:", id)
+    console.log("DEBUG byUser - Tipo do req.userId:", typeof id)
 
-    limit = Number(limit) || 5
-    offset = Number(offset) || 0
-
-    const news = await byUserService(userId, limit, offset)
-    const total = await countNewsFilter({ user: userId })
-
-    const currentUrl = req.baseUrl
-    const next = offset + limit
-    const nextUrl = next < total ? `${currentUrl}/${userId}?limit=${limit}&offset=${next}` : null
-    const previous = offset - limit < 0 ? null : offset - limit
-    const previousUrl = previous !== null ? `${currentUrl}/${userId}?limit=${limit}&offset=${previous}` : null
+    const news = await byUserService(id, {}) // MUDANÇA: sem limit/offset, busca todas do usuário
+    console.log("DEBUG byUser - Notícias encontradas:", news.length)
 
     if (news.length === 0) {
       return res.status(200).send({
         results: [],
-        message: "Não há notícias encontradas para este usuário.",
+        message: "Este usuário não possui notícias.",
       })
     }
 
-    res.send({
-      nextUrl,
-      previousUrl,
-      limit,
-      offset,
-      total,
+    return res.send({
       results: news.map((item) => ({
         id: item._id,
         title: item.title,
@@ -262,7 +249,7 @@ const byUser = async (req, res) => {
       })),
     })
   } catch (error) {
-    console.error(error)
+    console.error("DEBUG byUser - Erro:", error)
     res.status(500).send({ message: error.message })
   }
 }
