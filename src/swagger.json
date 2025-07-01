@@ -6,15 +6,15 @@
     "contact": {
       "email": "seuemail@exemplo.com"
     },
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "servers": [
     {
-      "url": "https://willnews-api.onrender.com",
+      "url": "https://wpp-news-network-api.onrender.com",
       "description": "Render Server (Produção)"
     },
     {
-      "url": "http://localhost:5173",
+      "url": "http://localhost:3000",
       "description": "Local Server (Desenvolvimento)"
     }
   ],
@@ -30,6 +30,10 @@
     {
       "name": "Notícias",
       "description": "Rotas para criação, visualização, atualização e moderação de notícias."
+    },
+    {
+      "name": "Administração",
+      "description": "Rotas exclusivas para administradores."
     }
   ],
   "paths": {
@@ -210,7 +214,7 @@
     "/auth": {
       "post": {
         "summary": "Login de Usuário",
-        "description": "Realiza o login de um usuário e retorna um token JWT para acesso autenticado.",
+        "description": "Realiza o login de um usuário e retorna um token JWT para acesso autenticado. **IMPORTANTE**: A resposta agora inclui o campo 'role' do usuário.",
         "tags": ["Autenticação"],
         "requestBody": {
           "required": true,
@@ -259,7 +263,7 @@
     "/news": {
       "post": {
         "summary": "Cria uma nova notícia",
-        "description": "Permite criar uma nova notícia. Usuários comuns criam notícias como 'pendente'. Administradores podem criar como 'publicado'.",
+        "description": "Permite criar uma nova notícia. **Usuários comuns** criam notícias com status 'pending'. **Administradores** criam notícias com status 'published' automaticamente.",
         "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
@@ -303,20 +307,20 @@
       },
       "get": {
         "summary": "Lista todas as notícias publicadas",
-        "description": "Retorna uma lista paginada de notícias com status 'publicado'. Não requer autenticação.",
+        "description": "Retorna uma lista paginada de notícias com status 'published'. **Não requer autenticação**. Usuários comuns veem apenas notícias publicadas.",
         "tags": ["Notícias"],
         "parameters": [
           {
             "in": "query",
             "name": "limit",
-            "schema": { "type": "integer" },
+            "schema": { "type": "integer", "default": 5 },
             "description": "Número máximo de notícias por página",
             "required": false
           },
           {
             "in": "query",
             "name": "offset",
-            "schema": { "type": "integer" },
+            "schema": { "type": "integer", "default": 0 },
             "description": "Número de notícias a pular (para paginação)",
             "required": false
           }
@@ -327,20 +331,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "nextUrl": { "type": "string", "nullable": true },
-                    "previousUrl": { "type": "string", "nullable": true },
-                    "limit": { "type": "integer" },
-                    "offset": { "type": "integer" },
-                    "total": { "type": "integer" },
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/NewsResponse"
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/NewsListResponse"
                 }
               }
             }
@@ -350,10 +341,57 @@
         }
       }
     },
+    "/news/admin": {
+      "get": {
+        "summary": "Lista TODAS as notícias para administradores (APENAS ADMIN)",
+        "description": "**NOVA ROTA**: Retorna todas as notícias independente do status (pending, published, inactive, rejected). Permite filtrar por status específico. Requer token de administrador.",
+        "tags": ["Administração"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer", "default": 10 },
+            "description": "Número máximo de notícias por página",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": { "type": "integer", "default": 0 },
+            "description": "Número de notícias a pular (para paginação)",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": { "type": "string" },
+            "description": "Filtrar por status específico (pending,published,inactive,rejected). Separar múltiplos por vírgula.",
+            "required": false,
+            "example": "pending,inactive"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsListResponse"
+                }
+              }
+            }
+          },
+          "401": { "description": "Não autorizado" },
+          "403": { "description": "Acesso negado (não é administrador)" },
+          "500": { "description": "Erro interno do servidor" }
+        }
+      }
+    },
     "/news/top": {
       "get": {
-        "summary": "Busca a notícia mais popular/recente publicada",
-        "description": "Retorna a notícia mais recente (assumindo que 'popular' é a mais recente). Não requer autenticação.",
+        "summary": "Busca a notícia mais recente publicada",
+        "description": "Retorna a notícia mais recente com status 'published'. Não requer autenticação.",
         "tags": ["Notícias"],
         "responses": {
           "200": {
@@ -361,7 +399,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NewsResponse"
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "results": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/NewsResponse" }
+                    }
+                  }
                 }
               }
             }
@@ -374,7 +419,7 @@
     "/news/search": {
       "get": {
         "summary": "Busca notícias por título",
-        "description": "Retorna notícias com status 'publicado' que correspondem ao título pesquisado. Não requer autenticação.",
+        "description": "Retorna notícias com status 'published' que correspondem ao título pesquisado. Não requer autenticação.",
         "tags": ["Notícias"],
         "parameters": [
           {
@@ -387,14 +432,14 @@
           {
             "in": "query",
             "name": "limit",
-            "schema": { "type": "integer" },
+            "schema": { "type": "integer", "default": 5 },
             "description": "Número máximo de notícias por página",
             "required": false
           },
           {
             "in": "query",
             "name": "offset",
-            "schema": { "type": "integer" },
+            "schema": { "type": "integer", "default": 0 },
             "description": "Número de notícias a pular (para paginação)",
             "required": false
           }
@@ -405,20 +450,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "nextUrl": { "type": "string", "nullable": true },
-                    "previousUrl": { "type": "string", "nullable": true },
-                    "total": { "type": "integer" },
-                    "limit": { "type": "integer" },
-                    "offset": { "type": "integer" },
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/NewsResponse"
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/NewsListResponse"
                 }
               }
             }
@@ -430,8 +462,8 @@
     },
     "/news/byUser": {
       "get": {
-        "summary": "Lista notícias por ID de usuário (Dono)",
-        "description": "Retorna todas as notícias criadas pelo usuário autenticado (incluindo pendentes/rejeitadas/inativas). Requer autenticação.",
+        "summary": "Lista notícias do usuário autenticado",
+        "description": "**CORRIGIDO**: Retorna todas as notícias criadas pelo usuário autenticado (incluindo pending/rejected/inactive). Usa o ID do token JWT. Requer autenticação.",
         "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "responses": {
@@ -462,7 +494,7 @@
     "/news/{id}": {
       "get": {
         "summary": "Busca notícia por ID",
-        "description": "Retorna os detalhes de uma notícia específica. Notícias 'publicadas' são visíveis a todos. Notícias 'pendentes'/'rejeitadas'/'inativas' são visíveis apenas ao autor ou a um administrador.",
+        "description": "Retorna os detalhes de uma notícia específica. Notícias 'published' são visíveis a todos. Outras são visíveis apenas ao autor ou administrador.",
         "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -480,20 +512,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NewsResponse"
+                  "type": "object",
+                  "properties": {
+                    "news": { "$ref": "#/components/schemas/NewsResponse" }
+                  }
                 }
               }
             }
           },
           "401": { "description": "Não autorizado" },
-          "403": { "description": "Acesso negado (não publicada ou sem permissão)" },
+          "403": { "description": "Acesso negado" },
           "404": { "description": "Notícia não encontrada" },
           "500": { "description": "Erro interno do servidor" }
         }
       },
       "patch": {
         "summary": "Atualiza parcialmente uma notícia (Dono ou Admin)",
-        "description": "Permite a atualização parcial dos dados de uma notícia. O autor pode editar o conteúdo; administradores podem editar o conteúdo E alterar o status.",
+        "description": "Permite a atualização parcial dos dados de uma notícia. O autor pode editar o conteúdo; administradores podem editar tudo.",
         "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -518,11 +553,6 @@
                     "title": "Novo Título da Notícia",
                     "text": "Novo texto para a notícia."
                   }
-                },
-                "Alterar Status (APENAS ADMIN)": {
-                  "value": {
-                    "status": "published"
-                  }
                 }
               }
             }
@@ -531,15 +561,15 @@
         "responses": {
           "200": { "description": "Notícia atualizada com sucesso" },
           "401": { "description": "Não autorizado" },
-          "403": { "description": "Acesso negado (não é dono, admin, ou tenta alterar status sem permissão)" },
+          "403": { "description": "Acesso negado" },
           "400": { "description": "Campos inválidos" },
           "404": { "description": "Notícia não encontrada" },
           "500": { "description": "Erro interno do servidor" }
         }
       },
       "delete": {
-        "summary": "Desativa uma notícia (Soft Delete - Dono ou Admin)",
-        "description": "Muda o status da notícia para 'inativo'. O autor pode inativar sua própria notícia; administradores podem inativar qualquer notícia.",
+        "summary": "Deleta uma notícia permanentemente (Dono ou Admin)",
+        "description": "**CORRIGIDO**: Remove a notícia permanentemente do banco de dados. O autor pode deletar sua própria notícia; administradores podem deletar qualquer notícia.",
         "tags": ["Notícias"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -547,14 +577,14 @@
             "in": "path",
             "name": "id",
             "schema": { "type": "string" },
-            "description": "ID da Notícia a ser inativada",
+            "description": "ID da Notícia a ser deletada",
             "required": true
           }
         ],
         "responses": {
-          "200": { "description": "Notícia inativada com sucesso" },
+          "200": { "description": "Notícia deletada permanentemente com sucesso" },
           "401": { "description": "Não autorizado" },
-          "403": { "description": "Acesso negado (não é dono ou admin)" },
+          "403": { "description": "Acesso negado" },
           "400": { "description": "ID inválido" },
           "404": { "description": "Notícia não encontrada" },
           "500": { "description": "Erro interno do servidor" }
@@ -564,8 +594,8 @@
     "/news/moderate/{id}": {
       "patch": {
         "summary": "Modera o status de uma notícia (APENAS ADMIN)",
-        "description": "Altera o status de uma notícia para 'pending', 'published' ou 'rejected'. Requer token de administrador.",
-        "tags": ["Notícias"],
+        "description": "**CORRIGIDO**: Altera o status de uma notícia para 'pending', 'published', 'inactive' ou 'rejected'. Requer token de administrador. **Esta é a rota usada pelos botões de aprovar/inativar**.",
+        "tags": ["Administração"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -585,7 +615,7 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": ["pending", "published", "rejected"],
+                    "enum": ["pending", "published", "inactive", "rejected"],
                     "description": "Novo status da notícia"
                   }
                 },
@@ -595,6 +625,9 @@
                 "Publicar Notícia": {
                   "value": { "status": "published" }
                 },
+                "Inativar Notícia": {
+                  "value": { "status": "inactive" }
+                },
                 "Rejeitar Notícia": {
                   "value": { "status": "rejected" }
                 }
@@ -603,8 +636,21 @@
           }
         },
         "responses": {
-          "200": { "description": "Status da notícia atualizado com sucesso" },
-          "400": { "description": "Status inválido" },
+          "200": {
+            "description": "Status da notícia atualizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "news": { "$ref": "#/components/schemas/NewsResponse" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Status inválido ou ID/status não fornecido" },
           "401": { "description": "Não autorizado" },
           "403": { "description": "Acesso negado (não é administrador)" },
           "404": { "description": "Notícia não encontrada" },
@@ -616,7 +662,7 @@
       "delete": {
         "summary": "Exclui uma notícia permanentemente (APENAS ADMIN)",
         "description": "Remove uma notícia do banco de dados de forma definitiva. **Esta ação é irreversível.** Requer token de administrador.",
-        "tags": ["Notícias"],
+        "tags": ["Administração"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -652,7 +698,20 @@
           }
         ],
         "responses": {
-          "200": { "description": "Like adicionado/removido com sucesso" },
+          "200": {
+            "description": "Like adicionado/removido com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "news": { "$ref": "#/components/schemas/NewsResponse" }
+                  }
+                }
+              }
+            }
+          },
           "401": { "description": "Não autorizado" },
           "400": { "description": "ID inválido" },
           "404": { "description": "Notícia não encontrada" },
@@ -680,11 +739,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "comment": { "type": "string", "description": "O texto do comentário" }
-                },
-                "required": ["comment"]
+                "$ref": "#/components/schemas/CommentRequest"
               },
               "examples": {
                 "Adicionar Comentário": {
@@ -695,7 +750,20 @@
           }
         },
         "responses": {
-          "200": { "description": "Comentário adicionado com sucesso" },
+          "201": {
+            "description": "Comentário adicionado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "news": { "$ref": "#/components/schemas/NewsResponse" }
+                  }
+                }
+              }
+            }
+          },
           "401": { "description": "Não autorizado" },
           "400": { "description": "Comentário vazio ou ID inválido" },
           "404": { "description": "Notícia não encontrada" },
@@ -704,7 +772,7 @@
       }
     },
     "/news/comment/{idNews}/{idComment}": {
-      "delete": {
+      "patch": {
         "summary": "Deleta um comentário",
         "description": "Remove um comentário de uma notícia. O autor do comentário ou um administrador pode deletar. Requer autenticação.",
         "tags": ["Notícias"],
@@ -726,7 +794,20 @@
           }
         ],
         "responses": {
-          "200": { "description": "Comentário removido com sucesso" },
+          "200": {
+            "description": "Comentário removido com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "news": { "$ref": "#/components/schemas/NewsResponse" }
+                  }
+                }
+              }
+            }
+          },
           "401": { "description": "Não autorizado" },
           "403": { "description": "Acesso negado (não é autor ou admin)" },
           "400": { "description": "ID inválido" },
@@ -765,8 +846,17 @@
           "email": { "type": "string", "format": "email", "example": "teste_upd@email.com" },
           "password": { "type": "string", "format": "password", "example": "novaSenha456" },
           "avatar": { "type": "string", "nullable": true, "example": "https://i.imgur.com/new_avatar.png" },
-          "background": { "type": "string", "nullable": true, "example": "https://images.wallpapersden.com/new_image.jpg" },
-          "role": { "type": "string", "enum": ["common", "admin"], "description": "Papel do usuário (apenas administradores podem alterar)", "example": "admin" }
+          "background": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://images.wallpapersden.com/new_image.jpg"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["common", "admin"],
+            "description": "Papel do usuário (apenas administradores podem alterar)",
+            "example": "admin"
+          }
         }
       },
       "UserResponse": {
@@ -797,8 +887,7 @@
         "properties": {
           "title": { "type": "string", "example": "Novo Título da Notícia" },
           "text": { "type": "string", "example": "Novo conteúdo da notícia aqui." },
-          "banner": { "type": "string", "nullable": true, "example": "https://example.com/new-banner.jpg" },
-          "status": { "type": "string", "enum": ["pending", "published", "rejected", "inactive"], "description": "Status da notícia (apenas administradores podem alterar)", "example": "published" }
+          "banner": { "type": "string", "nullable": true, "example": "https://example.com/new-banner.jpg" }
         }
       },
       "NewsResponse": {
@@ -808,9 +897,28 @@
           "title": { "type": "string", "example": "Título da Minha Notícia" },
           "text": { "type": "string", "example": "Conteúdo completo da notícia aqui." },
           "banner": { "type": "string", "nullable": true, "example": "https://example.com/banner-noticia.jpg" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "user": { "$ref": "#/components/schemas/UserResponse" },
-          "status": { "type": "string", "enum": ["pending", "published", "rejected", "inactive"], "example": "pending" },
+          "creatAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Data de criação (note: 'creatAt' mantido para compatibilidade)"
+          },
+          "name": {
+            "type": "string",
+            "example": "Nome do Autor",
+            "description": "Nome do usuário que criou a notícia"
+          },
+          "userName": { "type": "string", "example": "username_autor", "description": "Username do autor" },
+          "userAvatar": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://i.imgur.com/author_avatar.png",
+            "description": "Avatar do autor"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "published", "inactive", "rejected"],
+            "example": "pending"
+          },
           "likes": {
             "type": "array",
             "items": {
@@ -825,6 +933,22 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CommentResponse"
+            }
+          }
+        }
+      },
+      "NewsListResponse": {
+        "type": "object",
+        "properties": {
+          "nextUrl": { "type": "string", "nullable": true, "example": "/news?limit=5&offset=10" },
+          "previousUrl": { "type": "string", "nullable": true, "example": "/news?limit=5&offset=0" },
+          "limit": { "type": "integer", "example": 5 },
+          "offset": { "type": "integer", "example": 0 },
+          "total": { "type": "integer", "example": 25 },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsResponse"
             }
           }
         }
