@@ -289,9 +289,9 @@ const deleteComment = async (req, res) => {
 
 const erase = async (req, res) => {
   try {
-    const { newsId } = req.params
+    const { id } = req.params // CORRIGIDO: era newsId, agora é id (conforme a rota)
 
-    const result = await hardDeleteNewsService(newsId)
+    const result = await hardDeleteNewsService(id)
 
     if (!result) {
       return res.status(400).send({ message: "Erro ao deletar notícia permanentemente." })
@@ -306,9 +306,9 @@ const erase = async (req, res) => {
 
 const findById = async (req, res) => {
   try {
-    const { newsId } = req.params
+    const { id } = req.params // CORRIGIDO: era newsId, agora é id (conforme a rota)
 
-    const news = await findByIdService(newsId)
+    const news = await findByIdService(id)
 
     if (!news) {
       return res.status(404).send({ message: "Notícia não encontrada." })
@@ -387,10 +387,10 @@ const findBySearch = async (req, res) => {
 
 const likesNews = async (req, res) => {
   try {
-    const { newsId } = req.params
+    const { id } = req.params // CORRIGIDO: era newsId, agora é id (conforme a rota)
     const userId = req.userId
 
-    const updatedNews = await likesNewsService(newsId, userId)
+    const updatedNews = await likesNewsService(id, userId)
 
     if (!updatedNews) {
       return res.status(400).send({ message: "Erro ao curtir notícia." })
@@ -454,11 +454,11 @@ const topNews = async (req, res) => {
 
 const upDate = async (req, res) => {
   try {
-    const { newsId } = req.params
+    const { id } = req.params // CORRIGIDO: era newsId, agora é id (conforme a rota)
     const { title, text, banner } = req.body
     const userId = req.userId
 
-    const updatedNews = await upDateService(newsId, { title, text, banner }, userId)
+    const updatedNews = await upDateService(id, { title, text, banner }, userId)
 
     if (!updatedNews) {
       return res.status(400).send({ message: "Erro ao atualizar notícia." })
@@ -486,17 +486,48 @@ const upDate = async (req, res) => {
   }
 }
 
+// CORRIGIDO: Função moderateNews com logs de debug
 const moderateNews = async (req, res) => {
   try {
-    const { newsId } = req.params
-    const { status } = req.body
-    const userId = req.userId
+    console.log("=== DEBUG MODERATE NEWS ===")
+    console.log("DEBUG moderateNews - req.params:", req.params)
+    console.log("DEBUG moderateNews - req.body:", req.body)
+    console.log("DEBUG moderateNews - req.userId:", req.userId)
 
-    const updatedNews = await moderateNewsService(newsId, status, userId)
+    const { id } = req.params // CORRIGIDO: era newsId, agora é id (conforme a rota)
+    const { status } = req.body
+
+    console.log("DEBUG moderateNews - id extraído:", id)
+    console.log("DEBUG moderateNews - status extraído:", status)
+
+    if (!id) {
+      console.log("DEBUG moderateNews - ID não fornecido")
+      return res.status(400).send({ message: "ID da notícia é obrigatório." })
+    }
+
+    if (!status) {
+      console.log("DEBUG moderateNews - Status não fornecido")
+      return res.status(400).send({ message: "Status é obrigatório." })
+    }
+
+    // Verificar se o status é válido
+    const validStatuses = ["published", "inactive", "pending", "rejected"]
+    if (!validStatuses.includes(status)) {
+      console.log("DEBUG moderateNews - Status inválido:", status)
+      return res.status(400).send({ message: "Status inválido." })
+    }
+
+    console.log("DEBUG moderateNews - Chamando moderateNewsService...")
+    const updatedNews = await moderateNewsService(id, status)
+
+    console.log("DEBUG moderateNews - Resultado do service:", updatedNews ? "Sucesso" : "Falhou")
 
     if (!updatedNews) {
-      return res.status(400).send({ message: "Erro ao moderar notícia." })
+      console.log("DEBUG moderateNews - Notícia não encontrada ou não atualizada")
+      return res.status(404).send({ message: "Notícia não encontrada ou erro ao moderar." })
     }
+
+    console.log("DEBUG moderateNews - Sucesso! Status atualizado para:", updatedNews.status)
 
     res.status(200).send({
       message: "Notícia moderada com sucesso!",
@@ -507,24 +538,25 @@ const moderateNews = async (req, res) => {
         banner: updatedNews.banner,
         likes: updatedNews.likes,
         comments: updatedNews.comments,
-        name: updatedNews.user.name,
-        userName: updatedNews.user.username,
-        userAvatar: updatedNews.user.avatar,
+        name: updatedNews.user?.name || "Usuário não encontrado",
+        userName: updatedNews.user?.username || "username_não_encontrado",
+        userAvatar: updatedNews.user?.avatar || null,
         creatAt: updatedNews.createdAt,
         status: updatedNews.status,
       },
     })
   } catch (error) {
-    console.error(error)
-    res.status(500).send({ message: error.message })
+    console.error("DEBUG moderateNews - ERRO:", error)
+    console.error("DEBUG moderateNews - Stack trace:", error.stack)
+    res.status(500).send({ message: `Erro interno: ${error.message}` })
   }
 }
 
 const hardDeleteNews = async (req, res) => {
   try {
-    const { newsId } = req.params
+    const { id } = req.params // CORRIGIDO: era newsId, agora é id (conforme a rota)
 
-    const result = await hardDeleteNewsService(newsId)
+    const result = await hardDeleteNewsService(id)
 
     if (!result) {
       return res.status(400).send({ message: "Erro ao deletar notícia permanentemente." })
